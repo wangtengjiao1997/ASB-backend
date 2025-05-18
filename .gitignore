@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# 环境/依赖
+venv/
+.env
+.env.*
+*.env
+*.egg-info/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VSCode/IDE
+.vscode/
+.idea/
+*.swp
+
+# 日志
+*.log
+logs/
+*.sqlite3
+
+# 单元测试
+htmlcov/
+.tox/
+.coverage
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Jupyter
+.ipynb_checkpoints
+
+# MacOS
+.DS_Store
+
+# Auth0/敏感配置
+auth0_config.json
+
+# 其他
+*.bak
+*.tmp
