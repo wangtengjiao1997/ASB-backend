@@ -1,72 +1,60 @@
 from typing import List, Optional, Dict, Any, Tuple
 from app.entities.user_entity import User
-from app.schemas.user_schema import UserCreate, UserUpdate, UserFilter, PaginationParams
+from app.schemas.user_schema import UserCreate, UserUpdate, UserFilter
 from app.crud.base_crud import BaseCRUD
-
-class UserCRUD(BaseCRUD[User, UserCreate, UserUpdate, UserFilter]):
+from datetime import datetime
+class UserCRUD(BaseCRUD[User, UserCreate, UserUpdate]):
     def __init__(self):
         super().__init__(User)
     
-    async def _build_filter_query(self, filter_params: UserFilter) -> Dict:
-        """构建用户过滤查询条件"""
-        query = {}
-        
-        if filter_params.username:
-            query["username"] = {"$regex": filter_params.username, "$options": "i"}
-            
-        if filter_params.email:
-            query["email"] = {"$regex": filter_params.email, "$options": "i"}
-            
-        if filter_params.phone:
-            query["phone"] = {"$regex": filter_params.phone, "$options": "i"}
-            
-        if filter_params.status:
-            query["status"] = filter_params.status
-            
-        if filter_params.created_after:
-            query["created_at"] = {"$gte": filter_params.created_after}
-            
-        if filter_params.created_before:
-            if "created_at" in query:
-                query["created_at"]["$lte"] = filter_params.created_before
-            else:
-                query["created_at"] = {"$lte": filter_params.created_before}
-        
-        if filter_params.updated_after:
-            query["updated_at"] = {"$gte": filter_params.updated_after}
-            
-        if filter_params.updated_before:
-            if "updated_at" in query:
-                query["updated_at"]["$lte"] = filter_params.updated_before
-            else:
-                query["updated_at"] = {"$lte": filter_params.updated_before}
-                
-        return query
+    async def delete(self, id: str) -> bool:
+        """软删除用户"""
+        user = await self.get(id)
+        if user:
+            user.is_deleted = True
+            user.deleted_at = datetime.now()
+            user.name = f"deleted_{user.name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            await user.save()
+            return True
+        else:
+            return False
+
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """根据邮箱查询用户"""
+        return await User.find_one({"email": email, "is_deleted": False})
+
+    async def get_by_auth0_id(self, auth0_id: str) -> Optional[User]:
+        """根据auth0_id查询用户"""
+        return await User.find_one({"auth0_id": auth0_id, "is_deleted": False})
     
-    async def get_users_with_filter(
-        self,
-        filter_params: UserFilter,
-        pagination: PaginationParams
-    ) -> Tuple[List[User], int]:
-        """带分页和过滤的用户列表查询"""
-        query = await self._build_filter_query(filter_params)
+    async def get_user_fcm_token(self, user_id: str) -> Optional[Dict[str, Tuple[str, str]]]:
+        """根据用户ID查询用户"""
+        user = await User.find_one({"_id": user_id, "is_deleted": False})
+        if user:
+            return user.fcm_token
+        else:
+            return None
         
-        # 构建排序
-        sort_direction = -1 if pagination.sort_desc else 1
-        sort_field = pagination.sort_by
+    async def get_users_by_ids(self, user_ids: List[str]) -> List[User]:
+        """
+        根据用户ID列表批量查询用户信息
         
-        # 计算总数
-        total = await User.find(query).count()
+        Args:
+            user_ids: 用户ID列表
+            
+        Returns:
+            用户列表（过滤掉已删除的用户）
+        """
+        if not user_ids:
+            return []
+            
+        query = {
+            "_id": {"$in": user_ids},
+            "is_deleted": False
+        }
         
-        # 计算偏移量
-        skip = (pagination.page - 1) * pagination.page_size
-        
-        # 查询带分页的结果
-        users = await User.find(query).sort(
-            [(sort_field, sort_direction)]
-        ).skip(skip).limit(pagination.page_size).to_list()
-        
-        return users, total
+        users = await User.find(query).to_list()
+        return users
 
 # 创建单例实例
 user_crud = UserCRUD()

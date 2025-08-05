@@ -1,59 +1,87 @@
-from fastapi import APIRouter, Depends, Body, Security
+from fastapi import APIRouter, Depends, Body, Security, Header
 from app.features.user.user_controller import UserController
 from app.schemas.user_schema import (
-    UserCreate, UserUpdate, UserResponse, UserFilter,                                                                                                                                                                                         
-    PaginationParams, PaginatedResponse
+    UserResponse, UserLogin, UserProfileResponse
 )
-from typing import Dict
+from typing import Dict, Any, Optional
+from fastapi import Form, File, UploadFile
 from app.schemas.response_schema import BaseResponse
-from app.core.auth.auth import auth
-from fastapi_auth0 import Auth0User
+from fastapi.security import HTTPBearer
+from app.infrastructure.auth.auth0 import Auth0
+from app.entities.user_entity import User
+from app.middleware.auth_middleware import get_current_user_required, get_current_user_optional
+
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 
-@router.post("/create_user", response_model=BaseResponse[UserResponse])
-async def create_user(user_data: UserCreate):
-    """创建用户"""
-    data = await UserController.create_user(user_data)
-    return BaseResponse.success(data=data)
+token_auth_scheme = HTTPBearer()
+auth = Auth0()
 
-@router.get("/get_user_by_id/{user_id}", response_model=BaseResponse[UserResponse])
-async def get_user_by_id(
-    user_id: str,
+@router.post("/sync_user", response_model=BaseResponse[UserResponse])
+async def sync_user(
+    token: str = Depends(token_auth_scheme),
+    user_controller: UserController = Depends(UserController)
 ):
-    """获取用户信息 - 需要有效的Auth0 token和read:users权限"""
-    data = await UserController.get_user_by_id(user_id)
-    return BaseResponse.success(data=data)
+    """同步用户"""
+    data = await user_controller.sync_user(token)
+    return BaseResponse.success(data= data)
 
-@router.get("/get_current_user", dependencies=[Depends(auth.implicit_scheme)], response_model=BaseResponse[Dict])
+@router.get("/get_current_user", response_model=BaseResponse[UserResponse])
 async def get_current_user(
-    user: Auth0User = Security(auth.get_user)
+    current_user: User = Depends(get_current_user_required),
 ):
     """获取当前用户信息 - 基于token"""
-    user_info = {
-        "id": user.id,
-        "email": user.email,
-        "permissions": user.permissions
-    }
-    return BaseResponse.success(data=user_info)
+    return BaseResponse.success(data=current_user)
 
-@router.put("/update_user_by_id/{user_id}", response_model=BaseResponse[UserResponse])
-async def update_user_by_id(user_id: str, update_data: UserUpdate):
-    """更新用户信息"""
-    data = await UserController.update_user_by_id(user_id, update_data)
-    return BaseResponse.success(data=data)
-
-@router.delete("/delete_user_by_id/{user_id}", response_model=BaseResponse[bool])
-async def delete_user_by_id(user_id: str):
-    """删除用户"""
-    data = await UserController.delete_user_by_id(user_id)
-    return BaseResponse.success(data=data)
-
-@router.get("/get_users_with_filter", response_model=BaseResponse[PaginatedResponse])
-async def get_users_with_filter(
-    filter_params: UserFilter = Depends(),
-    pagination: PaginationParams = Depends()
+@router.put("/update", response_model=BaseResponse[UserResponse])
+async def update(
+    current_user: User = Depends(get_current_user_required),
+    name: Optional[str] = Form(None),
+    bio: Optional[str] = Form(None),
+    status: Optional[str] = Form(None),
+    password: Optional[str] = Form(None),
+    picture: Optional[UploadFile] = File(None),
+    user_controller: UserController = Depends(UserController)
 ):
-    """获取用户列表（带过滤和分页）"""
-    data = await UserController.get_users_with_filter(filter_params, pagination)
+    """更新用户信息"""
+    data = await user_controller.update(current_user, name, bio, status, password, picture)
+    return BaseResponse.success(data=data)
+
+@router.get("/get_current_user_profile", response_model=BaseResponse[UserProfileResponse])
+async def get_current_user_profile(
+    current_user: User = Depends(get_current_user_required),
+    user_controller: UserController = Depends(UserController)
+):
+    """获取用户信息"""
+    data = await user_controller.get_user_profile(current_user)
+    return BaseResponse.success(data=data)
+
+
+@router.post("/login_by_email", response_model=BaseResponse[Dict[str, Any]])
+async def login_user(login_data: UserLogin,
+    user_controller: UserController = Depends(UserController)
+):
+    """
+    用户登录接口
+    
+    Args:
+        login_data: 包含邮箱和密码的用户登录数据
+        
+    Returns:
+        Dict: 包含access_token和用户信息的结果
+    """
+    data = await user_controller.login_user(login_data)
+    return BaseResponse.success(data=data)
+
+@router.post("/add_fcm_token", response_model=BaseResponse[UserResponse])
+async def add_fcm_token(
+    current_user: User = Depends(get_current_user_required),
+    device_id: str = Body(..., embed=True), 
+    fcm_token: str = Body(..., embed=True),
+    user_controller: UserController = Depends(UserController)
+):
+    """
+    链接fcm token
+    """
+    data = await user_controller.add_fcm_token(current_user, device_id, fcm_token)
     return BaseResponse.success(data=data)

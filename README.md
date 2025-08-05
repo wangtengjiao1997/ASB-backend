@@ -1,13 +1,13 @@
-# Asb Backend
+# Undefined Backend
 
 ## 摘要
 
-Asb Backend 是一个基于 FastAPI 和 MongoDB 的现代化后端项目，采用分层架构设计，提供可扩展、高性能的 API 服务。项目遵循领域驱动设计（DDD）的思想，实现了关注点分离，使代码结构清晰、易于维护和扩展。系统设计考虑了多业务领域的需求，包括用户管理、内容管理以及未来可能的 AI 集成和爬虫功能。
+Undefined Backend 是一个基于 FastAPI 和 MongoDB 的现代化后端项目，采用分层架构设计，提供可扩展、高性能的 API 服务。项目遵循领域驱动设计（DDD）的思想，实现了关注点分离，使代码结构清晰、易于维护和扩展。系统设计考虑了多业务领域的需求，包括用户管理、内容管理以及未来可能的 AI 集成和爬虫功能。
 
 ## 项目结构
 
 ```
-Asb_backend/
+undefined_backend/
 ├── app/                   # 应用主目录
 │   ├── core/              # 核心配置和数据库连接
 │   ├── crud/              # 数据访问操作实现
@@ -119,7 +119,7 @@ pip install -r requirements.txt
 
 ```
 MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=Asb_backend
+DATABASE_NAME=undefined_backend
 DEBUG=True
 ```
 

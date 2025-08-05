@@ -1,6 +1,6 @@
 from beanie import Document
 from datetime import datetime, UTC
-from typing import Optional
+from typing import Optional, Dict, Any
 from pydantic import Field, ConfigDict
 import uuid
 
@@ -12,6 +12,7 @@ class BaseDocument(Document):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     class Settings:
         use_state_management = True

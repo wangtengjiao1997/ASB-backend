@@ -5,9 +5,9 @@ from pydantic import BaseModel
 ModelType = TypeVar("ModelType", bound=Document)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
 
-class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]):
+
+class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: Type[ModelType]):
         """
         CRUD基类，提供默认的数据库操作
@@ -18,7 +18,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         """
         创建对象
         """
-        obj_data = obj_in.model_dump(exclude_unset=True)
+        obj_data = obj_in.model_dump(exclude_none=True)
         db_obj = self.model(**obj_data)
         await db_obj.insert()
         return db_obj
@@ -40,7 +40,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         
         if not update_data:
             return await self.get(id)
-            
         db_obj = await self.get(id)
         if db_obj:
             for field, value in update_data.items():
@@ -55,24 +54,19 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         """
         db_obj = await self.get(id)
         if db_obj:
-            await db_obj.delete()
+            await db_obj.soft_delete()
             return True
         return False
 
-    async def get_multi(
-        self, 
-        skip: int = 0, 
-        limit: int = 100, 
-        sort_by: str = "updated_at",
-        sort_desc: bool = True
-    ) -> List[ModelType]:
+    async def increment_field(self, id: str, field: str, value: int) -> Optional[ModelType]:
         """
-        获取多个对象
+        增加对象字段值
         """
-        sort_direction = -1 if sort_desc else 1
-        return await self.model.find().sort(
-            [(sort_by, sort_direction)]
-        ).skip(skip).limit(limit).to_list()
+        db_obj = await self.get(id)
+        if db_obj:
+            setattr(db_obj, field, getattr(db_obj, field) + value)
+            await db_obj.save()
+        return db_obj
 
     async def count(self, query: Dict = None) -> int:
         """
@@ -81,3 +75,15 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         if query is None:
             query = {}
         return await self.model.find(query).count()
+    
+    async def find(self, query: Dict = None) -> List[ModelType]:
+        """
+        查找对象
+        """
+        return await self.model.find(query).to_list()
+        
+    async def find_one(self, query: Dict = None) -> Optional[ModelType]:
+        """
+        查找单个对象
+        """
+        return await self.model.find_one(query)
