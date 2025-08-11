@@ -1,8 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.core.config import settings
-from app.entities import (User, Follow, Like, TaskEntity, Chat, Message, Report, SystemConfig,
-                          LiveCard, UserLiveCardRelation,Subscribe)
+from app.entities import (User, SystemConfig)
 from datetime import timezone
 # 创建一个全局client变量
 client: AsyncIOMotorClient = None
@@ -30,16 +29,7 @@ async def init_db():
         database=client[settings.DATABASE_NAME],
         document_models=[
             User,
-            Follow,
-            Like,
-            TaskEntity,
-            Chat,
-            Message,
-            Report,
-            SystemConfig,
-            LiveCard,
-            UserLiveCardRelation,
-            Subscribe
+            SystemConfig
         ]
     ) 
     return client

@@ -1,31 +1,30 @@
-from app.entities.base import BaseDocument
-from typing import Dict, Any, Tuple, List
-from datetime import datetime
+from typing import Optional, Dict, Any, Tuple
 from pydantic import Field
-from typing import Optional
+from datetime import datetime
+from app.entities.base import BaseDocument
+
 class User(BaseDocument):
-    auth0_id: str
-    name: str
-    phone: Optional[str] = Field(default="")
-    email: str = ""
-    email_verified: bool = False
-    password: Optional[str] = Field(default=None)
-    picture: Optional[str] = Field(default="")
-    status: str = "active"
-    bio: str = ""
-    following_count: int = 0
-    follower_count: int = 0
-    fcm_token: Dict[str, Any] = {}
-    last_login_date: Optional[datetime] = Field(default=None)
+
+    wechat_openid: str = Field(default="")
+    wechat_unionid: str = Field(default="")
+    nickname: str = Field(default="")
+    avatar_url: str = Field(default="")
+    gender: int = Field(default=0)  # 0: 未知, 1: 男, 2: 女
+    country: str = Field(default="")
+    province: str = Field(default="")
+    city: str = Field(default="")
+    
+    name: str = Field(default="")
+    bio: str = Field(default="")
+    status: str = Field(default="")
+    
+    fcm_token: Dict[str, Tuple[str, str]] = Field(default={})
+    metadata: Dict[str, Any] = Field(default={})
+
     class Settings:
-        name = "user"
+        name = "users"
         indexes = [
-            [("name", 1)],
-            [("email", 1)],
-            [("auth0_id", 1)],
-            # 新增复合索引
-            [("status", 1), ("created_at", -1)],  # 状态+创建时间
-            [("email_verified", 1), ("status", 1)],  # 验证状态+用户状态
-            [("last_login_date", -1)],  # 最后登录时间
-            [("is_deleted", 1), ("status", 1)]  # 删除状态+用户状态
+            [("wechat_openid", 1)],
+            [("wechat_unionid", 1)],
+            [("nickname", "text"), ("name", "text")]
         ]

@@ -1,21 +1,43 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
-from beanie import PydanticObjectId
+
 #######################
 # 基础模型定义
 #######################
 
 # 用户过滤条件
 class UserFilter(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    status: Optional[str] = None
+    nickname: Optional[str] = None
+    gender: Optional[int] = None
+    country: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
     created_after: Optional[datetime] = None
     created_before: Optional[datetime] = None
     updated_after: Optional[datetime] = None
     updated_before: Optional[datetime] = None
+
+#######################
+# 微信相关模型
+#######################
+
+class WechatCode(BaseModel):
+    """微信登录请求模型"""
+    code: str
+
+class WechatUserInfo(BaseModel):
+    """微信用户信息模型"""
+    encrypted_data: str
+    iv: str
+    signature: str
+    raw_data: str
+
+class WechatSession(BaseModel):
+    """微信会话信息"""
+    openid: str
+    session_key: str
+    unionid: Optional[str] = None
 
 #######################
 # User 模型
@@ -24,58 +46,62 @@ class UserFilter(BaseModel):
 # 用户基础模型
 class UserBase(BaseModel):
     id: Optional[str] = None
-    name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    picture: str = Field(default="")
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    gender: Optional[int] = None  # 0: 未知, 1: 男, 2: 女
+    country: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
+    language: Optional[str] = None
     status: Optional[str] = "active"
     bio: Optional[str] = ""
-    password: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
-
-class AuthUserInfo(BaseModel):
-    auth0_id: str
-    email: str
-    name: str
-    picture: str
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 # 用户创建请求模型
-class UserCreate(UserBase):
-    auth0_id: str
-    pass
+class UserCreate(BaseModel):
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    gender: Optional[int] = None
+    wechat_openid: str
+    wechat_unionid: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 # 更新用户请求模型
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    password: Optional[str] = None
-    picture: Optional[str] = None
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    gender: Optional[int] = None
+    country: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
+    language: Optional[str] = None
     status: Optional[str] = None
     bio: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     fcm_token: Optional[Dict[str, Tuple[str, str]]] = None
-
-# 用户登录请求模型
-class UserLogin(BaseModel):
-    email: str
-    password: str
+    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
 
 #######################
 # User response 模型
 #######################
 
-# 用户基础模型
+# 用户响应基础模型
 class UserResponse(BaseModel):
     id: str
-    agent_id: Optional[str] = None
-    name: str
-    email: str
-    phone: Optional[str] = None
-    picture: str = Field(default="")
+    wechat_openid: str
+    wechat_unionid: Optional[str] = None
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    gender: Optional[int] = None
+    country: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
+    language: Optional[str] = None
     status: Optional[str] = "active"
-    fcm_token: Optional[Dict[str, Tuple[str, str]]] = None
     bio: Optional[str] = ""
+    fcm_token: Optional[Dict[str, Tuple[str, str]]] = None
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -84,14 +110,24 @@ class UserResponse(BaseModel):
 
 class UserProfileResponse(BaseModel):
     id: str
-    name: str
-    picture: str = Field(default="")
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    gender: Optional[int] = None
+    country: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
     bio: Optional[str] = ""
     status: Optional[str] = "active"
     created_at: datetime
     updated_at: Optional[datetime] = None
     
     model_config = {"from_attributes": True}
+
+# 微信登录响应模型
+class WechatLoginResponse(BaseModel):
+    session_info: WechatSession
+    token: str
+    user: UserResponse
 
 #######################
 # 分页响应模型

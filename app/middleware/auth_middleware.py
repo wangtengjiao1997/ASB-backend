@@ -3,7 +3,7 @@ from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
-from app.infrastructure.auth.auth0 import Auth0
+from app.infrastructure.wechat.wechat_auth import WechatAuth
 from app.features.user.user_service import UserService
 from app.entities.user_entity import User
 from app.utils.logger_service import logger
@@ -17,33 +17,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app):
         super().__init__(app)
-        self.auth0 = Auth0()
+        self.wechat_auth = WechatAuth()
         self.user_service = UserService()
         
         # 不需要token验证的路径前缀 - 前缀匹配
         self.excluded_prefixes = [
-            "/docs",
-            "/redoc", 
-            "/openapi.json",
-            "/api/v1/users/login_by_email",
-            "/health",
-            "/favicon.ico",
-            "/api/v1/live_cards",
-            "/api/v1/app",
-            "/api/v1/agents",                   # 所有获取代理详情的请求
-            "/api/v1/posts"                  # 所有帖子详情页面（如果是GET请求）
+            "/api/v1/users"
         ]
 
         self.excluded_verify_prefixes = [
-            "/api/v1/task",
-            "/api/v1/users/sync_user",
-            "/api/v1/users/create_user",
-            "/api/v1/task/discord_bot/auto_post",
-            "/api/v1/task/create_article_task",
-            "/api/v1/task/create_article_task_callback",
-            "/api/v1/report",
-            "/api/v1/system_config",
-            "/api/v1/users/get_creation_user"
+            "/api/v1/users/sync",
+            "/health",
+            "/favicon.ico",
+            "/docs",
+            "/redoc", 
+            "/openapi.json",
         ]
 
     async def dispatch(self, request: Request, call_next):
@@ -60,7 +48,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             request.state.current_user = user
             request.state.is_authenticated = user is not None
             return await call_next(request)
-
+        
         user = await self._get_user_required(request)
         request.state.current_user = user
         request.state.is_authenticated = True

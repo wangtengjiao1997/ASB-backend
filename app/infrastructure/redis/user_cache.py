@@ -2,7 +2,6 @@ from app.entities.user_entity import User
 from typing import Optional, Dict
 from app.utils.logger_service import logger
 from app.infrastructure.redis.redis_client import redis_client
-from app.utils.auth0_decoder import token_to_key_16char
 from cachetools import TTLCache
 import asyncio
 import time
@@ -19,13 +18,13 @@ class UserCache:
             maxsize=1000,  # 最多缓存1000个用户
             ttl=300        # 5分钟自动过期
         )
-    
+
     async def get_user_by_token(self, token: str) -> Optional[User]:
         """通过token获取用户数据（使用TTLCache）"""
         if not token:
             return None
         
-        token_key = token_to_key_16char(token)
+        token_key = token
         
         # 1. 检查内存缓存（TTLCache自动处理过期）
         if token_key in self._memory_cache:
@@ -53,7 +52,7 @@ class UserCache:
         if not token:
             return
         
-        token_key = token_to_key_16char(token)
+        token_key = token
         user_data = user.model_dump(exclude={"password"})
         
         # 立即缓存到内存（TTLCache自动管理过期）
