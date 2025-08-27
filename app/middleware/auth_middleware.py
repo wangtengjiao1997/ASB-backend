@@ -32,6 +32,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/redoc", 
             "/openapi.json",
+            "/api/v1/ai-agent/health"
         ]
 
     async def dispatch(self, request: Request, call_next):

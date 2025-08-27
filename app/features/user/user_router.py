@@ -28,7 +28,7 @@ async def sync_user(
     data = await user_controller.sync_user(token)
     return BaseResponse.success(data=data)
 
-@router.post("/update_current_user_info", response_model=BaseResponse[UserResponse])
+@router.put("/update_current_user_info", response_model=BaseResponse[UserResponse])
 async def update_current_user_info(
     user_info: UserUpdate,
     user: User = Depends(get_current_user_required),

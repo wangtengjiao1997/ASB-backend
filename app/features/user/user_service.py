@@ -25,7 +25,6 @@ class UserService:
           2) 加密：{ encrypted_data, iv, signature, raw_data }
         """
         try:
-            print("token: ", token)
             # 1. code -> openid, session_key
             wechat_data = await self.wechat_auth.code2session(token)
             openid = wechat_data["openid"]

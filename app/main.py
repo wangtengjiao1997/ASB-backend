@@ -6,7 +6,8 @@ from app.middleware.error_handler import register_error_handler
 from contextlib import asynccontextmanager
 
 from app.features import (
-    user_router
+    user_router,
+    ai_agent_router
 )
 from app.utils.logger_service import logger
 from app.infrastructure.redis.redis_client import redis_client
@@ -79,3 +80,4 @@ app.add_middleware(
 
 
 app.include_router(user_router, prefix="/api/v1", tags=["users"])
+app.include_router(ai_agent_router, prefix="/api/v1", tags=["ai_agent"])

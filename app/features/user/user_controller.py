@@ -20,7 +20,9 @@ class UserController:
             code: 微信登录code
         """
         try:
+            print(token.credentials)
             result = await self.user_service.sync_user(token.credentials)
+            print(result)
             return WechatLoginResponse(
                 session_info=result["session_info"],
                 token=result["token"],
